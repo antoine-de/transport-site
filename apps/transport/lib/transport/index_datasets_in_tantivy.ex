@@ -17,8 +17,6 @@ defmodule Transport.IndexDatasets do
     tantivy()
     |> Tantivy.search(query)
     |> Enum.flat_map(& &1)
-    |> IO.inspect()
-    |> Enum.with_index()
   end
 
   defp import_datasets do
