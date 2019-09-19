@@ -1,6 +1,6 @@
-defmodule Transport.IndexDatasets do
+defmodule Transport.DatasetsIndex do
   @moduledoc """
-  Reads the CSV file of all Real Time Providers and caches it
+  load dataset into tantivy search engine.
   """
   use Agent
   import Ecto.Query
@@ -21,7 +21,6 @@ defmodule Transport.IndexDatasets do
 
   defp import_datasets do
     {:ok, resource} = Tantivy.init()
-
     query = from(d in Transport.Dataset, select: {d.id, d.spatial, d.description, d.title})
 
     Transport.Repo.transaction(fn ->
@@ -32,7 +31,6 @@ defmodule Transport.IndexDatasets do
       |> Enum.to_list()
       |> Enum.each(&Tantivy.add_entries(resource, &1))
     end)
-
     resource
   end
 end

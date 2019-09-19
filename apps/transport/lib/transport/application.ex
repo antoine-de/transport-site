@@ -5,7 +5,7 @@ defmodule Transport.Application do
   """
 
   use Application
-  alias Transport.{IndexDatasets, ImportDataWorker, RealTimeProviders, Repo}
+  alias Transport.{DatasetsIndex, CommunesIndex, ImportDataWorker, RealTimeProviders, Repo}
   alias TransportWeb.Endpoint
   import Supervisor.Spec, only: [supervisor: 2]
 
@@ -16,7 +16,8 @@ defmodule Transport.Application do
       Repo,
       supervisor(ImportDataWorker, []),
       RealTimeProviders,
-      IndexDatasets,
+      DatasetsIndex,
+      CommunesIndex,
     ]
     |> add_scheduler()
 

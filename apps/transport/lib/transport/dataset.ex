@@ -79,7 +79,7 @@ defmodule Transport.Dataset do
   def search_datasets(q, s \\ []) do
     resource_query = no_validations_query()
 
-    res = Transport.IndexDatasets.search(q)
+    res = Transport.DatasetsIndex.search(q)
 
     __MODULE__
     |> where([d], d.id in ^res)

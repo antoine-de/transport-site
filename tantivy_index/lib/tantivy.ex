@@ -7,5 +7,7 @@ defmodule Tantivy do
   defdelegate search(resource, query), to: __MODULE__.NIF
   defdelegate add_entry(resource, title, body), to: __MODULE__.NIF
   defdelegate add_entries(resource, docs), to: __MODULE__.NIF
+  defdelegate add_cities(resource, docs), to: __MODULE__.NIF
+  defdelegate search_cities(resource, query), to: __MODULE__.NIF
   defdelegate explain(resource, query), to: __MODULE__.NIF
 end

@@ -2,6 +2,7 @@
 name = "tantivy_nif"
 version = "0.1.0"
 authors = []
+edition = "2018"
 
 [lib]
 name = "tantivy_nif"
@@ -13,3 +14,4 @@ rustler = "0.20.0"
 rustler_codegen = "0.20.0"
 lazy_static = "1.4.0"
 tantivy = "0.10"
+serde = { version = "1.0", features = ["derive"] }

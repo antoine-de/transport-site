@@ -15,6 +15,7 @@ defmodule Tantivy.NIF do
     error()
   end
 
+
   @spec add_entry(resource, String.t(), String.t()) :: :ok | {:error, reason :: any}
   def add_entry(_resource, _tilte, _body) do
     error()
@@ -22,6 +23,15 @@ defmodule Tantivy.NIF do
 
   @spec add_entries(resource, String.t()) :: :ok | {:error, reason :: any}
   def add_entries(_resource, _docs) do
+    error()
+  end
+
+  @spec search_cities(resource, String.t()) :: [[String.t()]]
+  def search_cities(_resource, _query) do
+    error()
+  end
+  @spec add_cities(resource, String.t()) :: :ok | {:error, reason :: any}
+  def add_cities(_resource, _docs) do
     error()
   end
 

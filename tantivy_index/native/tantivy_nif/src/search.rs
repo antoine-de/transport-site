@@ -13,19 +13,17 @@ pub struct Searcher {
     index_writer: IndexWriter,
 }
 
-impl Searcher {
-    pub fn new() -> Searcher {
+impl Default for Searcher {
+    fn default() -> Searcher {
         let mut schema_builder = Schema::builder();
         let ngrams_indexing = TextFieldIndexing::default()
             .set_tokenizer("ngram3")
             .set_index_option(IndexRecordOption::WithFreqsAndPositions);
 
-        let int_options = IntOptions::default()
-            .set_stored();
+        let int_options = IntOptions::default().set_stored();
         let _id = schema_builder.add_u64_field("id", int_options);
 
-        let body_options = TextOptions::default()
-            .set_indexing_options(ngrams_indexing);
+        let body_options = TextOptions::default().set_indexing_options(ngrams_indexing);
         let _body = schema_builder.add_text_field("body", body_options);
 
         let schema = schema_builder.build();
@@ -43,7 +41,9 @@ impl Searcher {
             index_writer,
         }
     }
+}
 
+impl Searcher {
     pub fn add_entry(&mut self, id: String, body: String) -> tantivy::Result<()> {
         // {
 
@@ -161,12 +161,8 @@ impl Searcher {
         //     .map(|(_score, doc_address)| searcher.doc(*doc_address).unwrap())
         //     .collect())
 
-        let query_parser = QueryParser::for_index(
-            &self.index,
-            vec![
-                self.schema.get_field("body").unwrap(),
-            ],
-        );
+        let query_parser =
+            QueryParser::for_index(&self.index, vec![self.schema.get_field("body").unwrap()]);
         // query_parser.set_conjunction_by_default();
 
         let query = query_parser.parse_query(&query)?;

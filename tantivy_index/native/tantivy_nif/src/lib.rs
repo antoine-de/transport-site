@@ -3,16 +3,22 @@ extern crate tantivy;
 #[macro_use]
 extern crate rustler;
 
+use cities_search::CitiesSearcher;
 use rustler::resource::ResourceArc;
 use rustler::ListIterator;
 use rustler::{Encoder, Env, Error, NifResult, Term};
 use search::Searcher;
 use std::sync::Mutex;
 
-struct SearcherResource(Mutex<Searcher>);
+#[derive(Default)]
+struct SearcherResource {
+    global_search: Mutex<Searcher>,
+    cities_search: Mutex<CitiesSearcher>,
+}
 
 mod atoms;
 mod search;
+mod cities_search;
 
 rustler_export_nifs! {
     "Elixir.Tantivy.NIF",
@@ -22,6 +28,8 @@ rustler_export_nifs! {
         ("add_entry", 3, add_entry),
         ("add_entries", 2, add_entries),
         ("explain", 2, explain),
+        ("search_cities", 2, search_cities),
+        ("add_cities", 2, add_cities),
     ],
     Some(load)
 }
@@ -32,7 +40,7 @@ fn load(env: Env, _info: Term) -> bool {
 }
 
 fn init<'a>(env: Env<'a>, _args: &[Term<'a>]) -> NifResult<Term<'a>> {
-    let resource = ResourceArc::new(SearcherResource(Mutex::new(Searcher::new())));
+    let resource = ResourceArc::new(SearcherResource::default());
     let resp = (atoms::ok(), resource);
     Ok(resp.encode(env))
 }
@@ -41,7 +49,25 @@ fn search<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
     let resource: ResourceArc<SearcherResource> = args[0].decode()?;
     let query: String = args[1].decode()?;
 
-    let searcher = match resource.0.try_lock() {
+    let searcher = match resource.global_search.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => return Err(Error::BadArg),
+    };
+
+    match searcher.search(query) {
+        Ok(docs) => {
+            let terms: Vec<Term<'a>> = docs.into_iter().map(|doc| doc_to_term(env, doc)).collect();
+            Ok(terms.encode(env))
+        }
+        Err(error) => Ok((atoms::error(), error_to_term(env, error)).encode(env)),
+    }
+}
+
+fn search_cities<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
+    let resource: ResourceArc<SearcherResource> = args[0].decode()?;
+    let query: String = args[1].decode()?;
+
+    let searcher = match resource.cities_search.try_lock() {
         Ok(guard) => guard,
         Err(_) => return Err(Error::BadArg),
     };
@@ -59,7 +85,7 @@ fn explain<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
     let resource: ResourceArc<SearcherResource> = args[0].decode()?;
     let query: String = args[1].decode()?;
 
-    let searcher = match resource.0.try_lock() {
+    let searcher = match resource.global_search.try_lock() {
         Ok(guard) => guard,
         Err(_) => return Err(Error::BadArg),
     };
@@ -75,7 +101,7 @@ fn add_entry<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
     let title: String = args[1].decode()?;
     let body: String = args[2].decode()?;
 
-    let mut searcher = match resource.0.try_lock() {
+    let mut searcher = match resource.global_search.try_lock() {
         Ok(guard) => guard,
         Err(_) => return Err(Error::BadArg),
     };
@@ -92,12 +118,29 @@ fn add_entries<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
 
     let docs = docs.map(|d| d.decode()).collect::<Result<_, _>>()?;
 
-    let mut searcher = match resource.0.try_lock() {
+    let mut searcher = match resource.global_search.try_lock() {
         Ok(guard) => guard,
         Err(_) => return Err(Error::BadArg),
     };
 
     match searcher.add_entries(docs) {
+        Ok(_) => Ok(atoms::ok().encode(env)),
+        Err(error) => Ok((atoms::error().encode(env), error_to_term(env, error)).encode(env)),
+    }
+}
+
+fn add_cities<'a>(env: Env<'a>, args: &[Term<'a>]) -> NifResult<Term<'a>> {
+    let resource: ResourceArc<SearcherResource> = args[0].decode()?;
+    let docs: ListIterator = args[1].decode()?;
+
+    let docs = docs.map(|d| d.decode()).collect::<Result<_, _>>()?;
+
+    let mut searcher = match resource.cities_search.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => return Err(Error::BadArg),
+    };
+
+    match searcher.add_cities(docs) {
         Ok(_) => Ok(atoms::ok().encode(env)),
         Err(error) => Ok((atoms::error().encode(env), error_to_term(env, error)).encode(env)),
     }
